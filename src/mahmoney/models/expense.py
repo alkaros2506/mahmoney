@@ -16,9 +16,7 @@ class Base(DeclarativeBase):
 class Expense(Base):
     __tablename__ = "expenses"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     # Supplier
     supplier_name: Mapped[str] = mapped_column(String(500))
@@ -53,15 +51,11 @@ class Expense(Base):
     ocr_confidence: Mapped[Decimal | None] = mapped_column(Numeric(3, 2), default=None)
 
     # Workflow
-    status: Mapped[str] = mapped_column(
-        String(20), default=ExpenseStatus.PENDING_REVIEW
-    )
+    status: Mapped[str] = mapped_column(String(20), default=ExpenseStatus.PENDING_REVIEW)
     notes: Mapped[str | None] = mapped_column(Text, default=None)
 
     # Timestamps
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )

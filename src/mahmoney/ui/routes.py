@@ -21,9 +21,7 @@ async def dashboard(request: Request, db: AsyncSession = Depends(get_db)):
     total_q = select(func.count(Expense.id))
     total = (await db.execute(total_q)).scalar_one()
 
-    pending_q = select(func.count(Expense.id)).where(
-        Expense.status == ExpenseStatus.PENDING_REVIEW
-    )
+    pending_q = select(func.count(Expense.id)).where(Expense.status == ExpenseStatus.PENDING_REVIEW)
     pending = (await db.execute(pending_q)).scalar_one()
 
     sum_q = select(func.coalesce(func.sum(Expense.total_amount), 0))

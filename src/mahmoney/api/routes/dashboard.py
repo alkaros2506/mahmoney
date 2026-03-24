@@ -33,10 +33,7 @@ async def get_summary(
     total_amount_eur = totals[1]
 
     # By category
-    cat_q = (
-        select(Expense.category, func.sum(Expense.total_amount))
-        .group_by(Expense.category)
-    )
+    cat_q = select(Expense.category, func.sum(Expense.total_amount)).group_by(Expense.category)
     if year:
         cat_q = cat_q.where(extract("year", Expense.date) == year)
     cat_result = await db.execute(cat_q)
@@ -67,9 +64,7 @@ async def get_summary(
     by_status = {row[0]: row[1] for row in status_result.all()}
 
     # Pending review count
-    pending_q = select(func.count(Expense.id)).where(
-        Expense.status == ExpenseStatus.PENDING_REVIEW
-    )
+    pending_q = select(func.count(Expense.id)).where(Expense.status == ExpenseStatus.PENDING_REVIEW)
     if year:
         pending_q = pending_q.where(extract("year", Expense.date) == year)
     pending_count = (await db.execute(pending_q)).scalar_one()

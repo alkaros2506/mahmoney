@@ -29,9 +29,7 @@ class ChaseParser:
                 if not date_str or not description:
                     continue
 
-                date = datetime.strptime(date_str.strip(), "%m/%d/%Y").replace(
-                    tzinfo=UTC
-                )
+                date = datetime.strptime(date_str.strip(), "%m/%d/%Y").replace(tzinfo=UTC)
                 amount = Decimal(amount_str.strip())
 
                 # Chase uses negative for charges

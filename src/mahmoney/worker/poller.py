@@ -16,9 +16,7 @@ async def main() -> None:
     settings = get_settings()
     session_factory = get_session_factory()
 
-    logger.info(
-        "Email poller started. Polling every %d seconds.", settings.poll_interval_seconds
-    )
+    logger.info("Email poller started. Polling every %d seconds.", settings.poll_interval_seconds)
 
     while True:
         try:
