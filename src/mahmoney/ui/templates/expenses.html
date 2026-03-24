@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}Expenses{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold">Expenses</h1>
+    <span class="text-sm text-gray-500">{{ total }} total</span>
+</div>
+
+<!-- Filters -->
+<div class="bg-white rounded-lg shadow p-4 mb-4 flex gap-4 items-end flex-wrap">
+    <form method="get" class="flex gap-4 items-end flex-wrap">
+        <div>
+            <label class="block text-xs text-gray-500 mb-1">Status</label>
+            <select name="status" class="border rounded px-3 py-1.5 text-sm">
+                <option value="">All</option>
+                <option value="pending_review" {{ 'selected' if status_filter == 'pending_review' }}>Pending Review</option>
+                <option value="approved" {{ 'selected' if status_filter == 'approved' }}>Approved</option>
+                <option value="exported" {{ 'selected' if status_filter == 'exported' }}>Exported</option>
+            </select>
+        </div>
+        <div>
+            <label class="block text-xs text-gray-500 mb-1">Category</label>
+            <select name="category" class="border rounded px-3 py-1.5 text-sm">
+                <option value="">All</option>
+                <option value="travel" {{ 'selected' if category_filter == 'travel' }}>Travel</option>
+                <option value="meals" {{ 'selected' if category_filter == 'meals' }}>Meals</option>
+                <option value="equipment" {{ 'selected' if category_filter == 'equipment' }}>Equipment</option>
+                <option value="services" {{ 'selected' if category_filter == 'services' }}>Services</option>
+                <option value="subscriptions" {{ 'selected' if category_filter == 'subscriptions' }}>Subscriptions</option>
+                <option value="office" {{ 'selected' if category_filter == 'office' }}>Office</option>
+                <option value="other" {{ 'selected' if category_filter == 'other' }}>Other</option>
+            </select>
+        </div>
+        <button type="submit" class="px-4 py-1.5 bg-gray-100 border rounded text-sm hover:bg-gray-200">Filter</button>
+    </form>
+</div>
+
+<!-- Table -->
+<div class="bg-white rounded-lg shadow overflow-x-auto">
+    <table class="w-full text-sm">
+        <thead class="bg-gray-50 text-left">
+            <tr>
+                <th class="px-4 py-3 font-medium text-gray-600">Date</th>
+                <th class="px-4 py-3 font-medium text-gray-600">Supplier</th>
+                <th class="px-4 py-3 font-medium text-gray-600">Amount</th>
+                <th class="px-4 py-3 font-medium text-gray-600">Category</th>
+                <th class="px-4 py-3 font-medium text-gray-600">Status</th>
+                <th class="px-4 py-3 font-medium text-gray-600">Source</th>
+                <th class="px-4 py-3 font-medium text-gray-600">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y">
+            {% for expense in expenses %}
+            <tr id="expense-{{ expense.id }}" class="hover:bg-gray-50">
+                <td class="px-4 py-3">{{ expense.date.strftime('%Y-%m-%d') }}</td>
+                <td class="px-4 py-3">
+                    <div>{{ expense.supplier_name }}</div>
+                    {% if expense.supplier_afm %}
+                    <div class="text-xs text-gray-400">AFM: {{ expense.supplier_afm }}</div>
+                    {% endif %}
+                    {% if expense.supplier_country != 'GR' %}
+                    <div class="text-xs text-gray-400">{{ expense.supplier_country }}</div>
+                    {% endif %}
+                </td>
+                <td class="px-4 py-3 font-mono">
+                    {{ "%.2f"|format(expense.total_amount) }} {{ expense.currency }}
+                    {% if expense.vat_amount %}
+                    <div class="text-xs text-gray-400">VAT: {{ "%.2f"|format(expense.vat_amount) }}</div>
+                    {% endif %}
+                </td>
+                <td class="px-4 py-3">
+                    <select
+                        hx-patch="/api/v1/expenses/{{ expense.id }}"
+                        hx-vals='js:{"category": event.target.value}'
+                        hx-headers='{"Content-Type": "application/json"}'
+                        hx-swap="none"
+                        class="border rounded px-2 py-1 text-xs">
+                        {% for cat in ['travel', 'meals', 'equipment', 'services', 'subscriptions', 'office', 'other'] %}
+                        <option value="{{ cat }}" {{ 'selected' if expense.category == cat }}>{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </td>
+                <td class="px-4 py-3">
+                    {% if expense.status == 'pending_review' %}
+                    <span class="px-2 py-0.5 rounded-full text-xs bg-amber-100 text-amber-700">Pending</span>
+                    {% elif expense.status == 'approved' %}
+                    <span class="px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700">Approved</span>
+                    {% else %}
+                    <span class="px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700">Exported</span>
+                    {% endif %}
+                </td>
+                <td class="px-4 py-3 text-xs text-gray-500">{{ expense.source }}</td>
+                <td class="px-4 py-3">
+                    {% if expense.status == 'pending_review' %}
+                    <button
+                        hx-post="/api/v1/expenses/{{ expense.id }}/approve"
+                        hx-swap="outerHTML"
+                        hx-target="#expense-{{ expense.id }}"
+                        class="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700">
+                        Approve
+                    </button>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            {% if not expenses %}
+            <tr>
+                <td colspan="7" class="px-4 py-8 text-center text-gray-400">No expenses found</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+{% if total > per_page %}
+<div class="flex justify-center gap-2 mt-4">
+    {% if page > 1 %}
+    <a href="?page={{ page - 1 }}&status={{ status_filter }}&category={{ category_filter }}" class="px-3 py-1 border rounded text-sm hover:bg-gray-100">Previous</a>
+    {% endif %}
+    <span class="px-3 py-1 text-sm text-gray-500">Page {{ page }}</span>
+    {% if page * per_page < total %}
+    <a href="?page={{ page + 1 }}&status={{ status_filter }}&category={{ category_filter }}" class="px-3 py-1 border rounded text-sm hover:bg-gray-100">Next</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

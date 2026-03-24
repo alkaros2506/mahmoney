@@ -1,0 +1,50 @@
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: mahmoney
+      POSTGRES_USER: mahmoney
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mahmoney"]
+      interval: 5s
+      retries: 5
+
+  app:
+    build: .
+    command: >
+      sh -c "python -m alembic upgrade head &&
+             uvicorn mahmoney.api.app:create_app --factory --host 0.0.0.0 --port 8000 --reload"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://mahmoney:${DB_PASSWORD:-changeme}@db:5432/mahmoney
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src:/app/src
+      - receipts:/data/receipts
+    depends_on:
+      db:
+        condition: service_healthy
+
+  worker:
+    build: .
+    command: python -m mahmoney.worker.poller
+    environment:
+      DATABASE_URL: postgresql+asyncpg://mahmoney:${DB_PASSWORD:-changeme}@db:5432/mahmoney
+    env_file:
+      - .env
+    volumes:
+      - receipts:/data/receipts
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  receipts:

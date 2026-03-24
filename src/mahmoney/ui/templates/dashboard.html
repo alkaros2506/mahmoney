@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Dashboard</h1>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="text-sm text-gray-500">Total Expenses</div>
+        <div class="text-3xl font-bold">{{ total_expenses }}</div>
+    </div>
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="text-sm text-gray-500">Pending Review</div>
+        <div class="text-3xl font-bold text-amber-600">{{ pending_review }}</div>
+    </div>
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="text-sm text-gray-500">Total Amount</div>
+        <div class="text-3xl font-bold text-green-600">&euro;{{ "%.2f"|format(total_amount) }}</div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-lg font-semibold mb-4">Quick Actions</h2>
+        <div class="space-y-2">
+            <a href="/expenses?status=pending_review" class="block px-4 py-2 bg-amber-50 text-amber-700 rounded hover:bg-amber-100">
+                Review pending expenses ({{ pending_review }})
+            </a>
+        </div>
+    </div>
+    <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-lg font-semibold mb-4">Import</h2>
+        <form hx-post="/api/v1/imports/csv" hx-encoding="multipart/form-data" hx-swap="innerHTML" hx-target="#import-result">
+            <label class="block text-sm text-gray-600 mb-2">Upload bank CSV (Eurobank, Chase, Revolut)</label>
+            <input type="file" name="file" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+            <button type="submit" class="mt-3 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">Import</button>
+        </form>
+        <div id="import-result" class="mt-3 text-sm"></div>
+    </div>
+</div>
+{% endblock %}
