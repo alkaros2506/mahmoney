@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from mahmoney.api.app import create_app
 from mahmoney.api.deps import get_db
+from mahmoney.auth import create_session
 from mahmoney.models.enums import Category, ExpenseStatus, PaymentMethod, Source
 from mahmoney.models.expense import Base, Expense
 
@@ -50,10 +51,29 @@ async def app(engine) -> FastAPI:
     return application
 
 
+def _get_auth_cookie() -> dict[str, str]:
+    """Create a valid session and return the cookie header."""
+    from starlette.responses import Response
+
+    resp = Response()
+    create_session(resp)
+    # Extract the set-cookie header value
+    for header_name, header_value in resp.raw_headers:
+        if header_name == b"set-cookie":
+            cookie_str = header_value.decode()
+            # Parse "mahmoney_session=value; ..."
+            cookie_pair = cookie_str.split(";")[0]
+            return {"Cookie": cookie_pair}
+    return {}
+
+
 @pytest.fixture
 async def client(app: FastAPI) -> AsyncGenerator[AsyncClient]:
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as c:
+    cookies = _get_auth_cookie()
+    async with AsyncClient(
+        transport=transport, base_url="http://test", headers=cookies
+    ) as c:
         yield c
 
 

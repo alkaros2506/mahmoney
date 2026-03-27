@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from mahmoney.api.routes import dashboard, expenses, health, imports
+from mahmoney.auth import AuthMiddleware
 from mahmoney.ui.routes import router as ui_router
 
 
@@ -21,6 +22,8 @@ def create_app() -> FastAPI:
         version="0.1.0",
         lifespan=lifespan,
     )
+
+    app.add_middleware(AuthMiddleware)
 
     app.add_middleware(
         CORSMiddleware,

@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+{% block title %}Quick Scan{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Quick Scan</h1>
+<p class="text-sm text-gray-500 mb-4">Upload a receipt or invoice image and it will be analyzed automatically.</p>
+
+<div id="scan-area" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Upload panel -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-lg font-semibold mb-4">Upload Receipt</h2>
+        <form id="scan-form" enctype="multipart/form-data">
+            <div id="drop-zone"
+                 class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
+                <svg class="mx-auto h-12 w-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                </svg>
+                <p class="text-sm text-gray-600 mb-1">Drop image here or click to browse</p>
+                <p class="text-xs text-gray-400">JPEG, PNG, WebP, or PDF</p>
+                <input type="file" name="file" id="file-input" accept="image/*,.pdf" class="hidden">
+            </div>
+            <div id="file-preview" class="mt-4 hidden">
+                <img id="preview-img" class="max-h-64 mx-auto rounded border" alt="Receipt preview">
+                <p id="preview-name" class="text-sm text-gray-500 text-center mt-2"></p>
+            </div>
+            <button type="submit" id="scan-btn" disabled
+                    class="mt-4 w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium">
+                Analyze Receipt
+            </button>
+        </form>
+        <div id="scan-loading" class="hidden mt-4 text-center">
+            <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+            <p class="text-sm text-gray-500 mt-2">Analyzing receipt with OCR...</p>
+        </div>
+        <div id="scan-error" class="hidden mt-4 bg-red-50 text-red-700 px-4 py-3 rounded text-sm"></div>
+    </div>
+
+    <!-- Results panel -->
+    <div id="results-panel" class="hidden">
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-lg font-semibold mb-4">Extracted Data</h2>
+            <p class="text-xs text-gray-400 mb-4">Review and edit before saving. Fields from OCR are pre-filled.</p>
+            <form id="save-form">
+                <input type="hidden" name="receipt_path" id="receipt_path">
+                <input type="hidden" name="ocr_raw" id="ocr_raw">
+                <input type="hidden" name="ocr_confidence" id="ocr_confidence">
+
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Supplier Name</label>
+                        <input type="text" name="supplier_name" id="f-supplier_name"
+                               class="w-full border rounded px-2 py-1.5 text-sm" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Supplier AFM</label>
+                        <input type="text" name="supplier_afm" id="f-supplier_afm"
+                               class="w-full border rounded px-2 py-1.5 text-sm" placeholder="Optional">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Date</label>
+                        <input type="date" name="date" id="f-date"
+                               class="w-full border rounded px-2 py-1.5 text-sm" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Invoice #</label>
+                        <input type="text" name="invoice_number" id="f-invoice_number"
+                               class="w-full border rounded px-2 py-1.5 text-sm" placeholder="Optional">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-3 mb-3">
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Net Amount</label>
+                        <input type="number" step="0.01" name="net_amount" id="f-net_amount"
+                               class="w-full border rounded px-2 py-1.5 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">VAT</label>
+                        <input type="number" step="0.01" name="vat_amount" id="f-vat_amount"
+                               class="w-full border rounded px-2 py-1.5 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Total</label>
+                        <input type="number" step="0.01" name="total_amount" id="f-total_amount"
+                               class="w-full border rounded px-2 py-1.5 text-sm" required>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-3 mb-3">
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">VAT Rate %</label>
+                        <input type="number" step="0.01" name="vat_rate" id="f-vat_rate"
+                               class="w-full border rounded px-2 py-1.5 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Currency</label>
+                        <input type="text" name="currency" id="f-currency" value="EUR"
+                               class="w-full border rounded px-2 py-1.5 text-sm" maxlength="3">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Country</label>
+                        <input type="text" name="supplier_country" id="f-supplier_country" value="GR"
+                               class="w-full border rounded px-2 py-1.5 text-sm" maxlength="2">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Category</label>
+                        <select name="category" id="f-category" class="w-full border rounded px-2 py-1.5 text-sm">
+                            <option value="other">Other</option>
+                            <option value="travel">Travel</option>
+                            <option value="meals">Meals</option>
+                            <option value="equipment">Equipment</option>
+                            <option value="services">Services</option>
+                            <option value="subscriptions">Subscriptions</option>
+                            <option value="office">Office</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Payment Method</label>
+                        <select name="payment_method" id="f-payment_method" class="w-full border rounded px-2 py-1.5 text-sm">
+                            <option value="card">Card</option>
+                            <option value="cash">Cash</option>
+                            <option value="bank_transfer">Bank Transfer</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="block text-xs text-gray-500 mb-1">MARK Number</label>
+                    <input type="text" name="mark_number" id="f-mark_number"
+                           class="w-full border rounded px-2 py-1.5 text-sm" placeholder="Optional (Greek invoices)">
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-xs text-gray-500 mb-1">Notes</label>
+                    <textarea name="notes" id="f-notes" rows="2"
+                              class="w-full border rounded px-2 py-1.5 text-sm" placeholder="Optional"></textarea>
+                </div>
+
+                <div id="confidence-bar" class="hidden mb-4">
+                    <div class="flex justify-between text-xs text-gray-500 mb-1">
+                        <span>OCR Confidence</span>
+                        <span id="confidence-value"></span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div id="confidence-fill" class="h-2 rounded-full transition-all"></div>
+                    </div>
+                </div>
+
+                <button type="submit" id="save-btn"
+                        class="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium">
+                    Save Expense
+                </button>
+            </form>
+            <div id="save-success" class="hidden mt-4 bg-green-50 text-green-700 px-4 py-3 rounded text-sm"></div>
+            <div id="save-error" class="hidden mt-4 bg-red-50 text-red-700 px-4 py-3 rounded text-sm"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+const scanBtn = document.getElementById('scan-btn');
+const scanForm = document.getElementById('scan-form');
+const previewDiv = document.getElementById('file-preview');
+const previewImg = document.getElementById('preview-img');
+const previewName = document.getElementById('preview-name');
+
+// Drag and drop
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-blue-400', 'bg-blue-50'); });
+dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('border-blue-400', 'bg-blue-50'); });
+dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('border-blue-400', 'bg-blue-50');
+    if (e.dataTransfer.files.length) {
+        fileInput.files = e.dataTransfer.files;
+        showPreview(e.dataTransfer.files[0]);
+    }
+});
+fileInput.addEventListener('change', () => {
+    if (fileInput.files.length) showPreview(fileInput.files[0]);
+});
+
+function showPreview(file) {
+    scanBtn.disabled = false;
+    previewName.textContent = file.name;
+    if (file.type.startsWith('image/')) {
+        previewImg.src = URL.createObjectURL(file);
+        previewImg.classList.remove('hidden');
+    } else {
+        previewImg.classList.add('hidden');
+    }
+    previewDiv.classList.remove('hidden');
+}
+
+// Submit scan
+scanForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+
+    document.getElementById('scan-loading').classList.remove('hidden');
+    document.getElementById('scan-error').classList.add('hidden');
+    scanBtn.disabled = true;
+
+    try {
+        const resp = await fetch('/scan/analyze', { method: 'POST', body: formData });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.detail || 'Analysis failed');
+        populateResults(data);
+    } catch (err) {
+        const errDiv = document.getElementById('scan-error');
+        errDiv.textContent = err.message;
+        errDiv.classList.remove('hidden');
+        scanBtn.disabled = false;
+    } finally {
+        document.getElementById('scan-loading').classList.add('hidden');
+    }
+});
+
+function populateResults(data) {
+    document.getElementById('results-panel').classList.remove('hidden');
+    const ocr = data.ocr || {};
+
+    // Populate form fields
+    const setVal = (id, val) => { if (val != null) document.getElementById(id).value = val; };
+    setVal('f-supplier_name', ocr.supplier_name || '');
+    setVal('f-supplier_afm', ocr.supplier_afm || '');
+    setVal('f-date', ocr.date || '');
+    setVal('f-invoice_number', ocr.invoice_number || '');
+    setVal('f-net_amount', ocr.net_amount);
+    setVal('f-vat_amount', ocr.vat_amount);
+    setVal('f-total_amount', ocr.total_amount);
+    setVal('f-vat_rate', ocr.vat_rate);
+    setVal('f-mark_number', ocr.mark_number || '');
+    if (ocr.currency) setVal('f-currency', ocr.currency);
+    if (ocr.supplier_country) setVal('f-supplier_country', ocr.supplier_country);
+    if (ocr.payment_method) setVal('f-payment_method', ocr.payment_method);
+
+    // Hidden fields
+    document.getElementById('receipt_path').value = data.receipt_path || '';
+    document.getElementById('ocr_raw').value = JSON.stringify(ocr);
+    if (ocr.confidence != null) {
+        document.getElementById('ocr_confidence').value = ocr.confidence;
+        const pct = Math.round(ocr.confidence * 100);
+        document.getElementById('confidence-value').textContent = pct + '%';
+        const fill = document.getElementById('confidence-fill');
+        fill.style.width = pct + '%';
+        fill.className = 'h-2 rounded-full transition-all ' +
+            (pct >= 80 ? 'bg-green-500' : pct >= 50 ? 'bg-yellow-500' : 'bg-red-500');
+        document.getElementById('confidence-bar').classList.remove('hidden');
+    }
+}
+
+// Save expense
+document.getElementById('save-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    document.getElementById('save-error').classList.add('hidden');
+    document.getElementById('save-success').classList.add('hidden');
+    const saveBtn = document.getElementById('save-btn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving...';
+
+    const form = e.target;
+    const body = {
+        supplier_name: form.supplier_name.value,
+        supplier_afm: form.supplier_afm.value || null,
+        supplier_country: form.supplier_country.value || 'GR',
+        invoice_number: form.invoice_number.value || null,
+        date: form.date.value ? form.date.value + 'T00:00:00Z' : null,
+        net_amount: form.net_amount.value ? parseFloat(form.net_amount.value) : null,
+        vat_amount: form.vat_amount.value ? parseFloat(form.vat_amount.value) : null,
+        vat_rate: form.vat_rate.value ? parseFloat(form.vat_rate.value) : null,
+        total_amount: parseFloat(form.total_amount.value),
+        currency: form.currency.value || 'EUR',
+        payment_method: form.payment_method.value,
+        category: form.category.value,
+        mark_number: form.mark_number.value || null,
+        notes: form.notes.value || null,
+        receipt_path: form.receipt_path.value || null,
+        ocr_raw: form.ocr_raw.value || null,
+        ocr_confidence: form.ocr_confidence.value ? parseFloat(form.ocr_confidence.value) : null,
+    };
+
+    try {
+        const resp = await fetch('/scan/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.detail || 'Save failed');
+        const msg = document.getElementById('save-success');
+        msg.innerHTML = 'Expense saved! <a href="/expenses" class="underline font-medium">View expenses</a>';
+        msg.classList.remove('hidden');
+        saveBtn.textContent = 'Saved';
+    } catch (err) {
+        const errDiv = document.getElementById('save-error');
+        errDiv.textContent = err.message;
+        errDiv.classList.remove('hidden');
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Expense';
+    }
+});
+</script>
+{% endblock %}

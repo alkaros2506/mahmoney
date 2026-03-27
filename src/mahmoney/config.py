@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     # Storage
     storage_path: Path = Path("/data/receipts")
 
+    # Auth
+    auth_password: str = "changeme"  # noqa: S105
+    session_secret: str = "change-this-to-a-random-secret-key"  # noqa: S105
+
 
 def get_settings() -> Settings:
     return Settings()

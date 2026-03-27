@@ -46,6 +46,7 @@
                 <th class="px-4 py-3 font-medium text-gray-600">Category</th>
                 <th class="px-4 py-3 font-medium text-gray-600">Status</th>
                 <th class="px-4 py-3 font-medium text-gray-600">Source</th>
+                <th class="px-4 py-3 font-medium text-gray-600">Receipt</th>
                 <th class="px-4 py-3 font-medium text-gray-600">Actions</th>
             </tr>
         </thead>
@@ -91,6 +92,14 @@
                 </td>
                 <td class="px-4 py-3 text-xs text-gray-500">{{ expense.source }}</td>
                 <td class="px-4 py-3">
+                    {% if expense.receipt_image_path %}
+                    <button onclick="showReceipt('/receipts/{{ expense.receipt_image_path }}')"
+                            class="text-blue-600 hover:text-blue-800 text-xs underline">View</button>
+                    {% else %}
+                    <span class="text-xs text-gray-300">--</span>
+                    {% endif %}
+                </td>
+                <td class="px-4 py-3">
                     {% if expense.status == 'pending_review' %}
                     <button
                         hx-post="/api/v1/expenses/{{ expense.id }}/approve"
@@ -105,7 +114,7 @@
             {% endfor %}
             {% if not expenses %}
             <tr>
-                <td colspan="7" class="px-4 py-8 text-center text-gray-400">No expenses found</td>
+                <td colspan="8" class="px-4 py-8 text-center text-gray-400">No expenses found</td>
             </tr>
             {% endif %}
         </tbody>
@@ -124,4 +133,25 @@
     {% endif %}
 </div>
 {% endif %}
+
+<!-- Receipt preview modal -->
+<div id="receipt-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center"
+     onclick="if(event.target===this)closeReceipt()">
+    <div class="bg-white rounded-lg shadow-xl max-w-2xl max-h-[90vh] overflow-auto p-4 relative">
+        <button onclick="closeReceipt()" class="absolute top-2 right-3 text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+        <img id="receipt-modal-img" class="max-w-full" alt="Receipt">
+    </div>
+</div>
+
+<script>
+function showReceipt(url) {
+    document.getElementById('receipt-modal-img').src = url;
+    document.getElementById('receipt-modal').classList.remove('hidden');
+}
+function closeReceipt() {
+    document.getElementById('receipt-modal').classList.add('hidden');
+    document.getElementById('receipt-modal-img').src = '';
+}
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeReceipt(); });
+</script>
 {% endblock %}
